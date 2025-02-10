@@ -8,19 +8,65 @@
 </head>
 <body>
     <h1>Stabo</h1>
+    <form id="post-form">
+        <label for="title">タイトル:</label>
+        <input type="text" id="title" name="title"><br><br>
+        <label for="message">メッセージ:</label>
+        <textarea id="message" name="message"></textarea><br><br>
+        <button type="submit">投稿</button>
+    </form>
+
     <div id="board"></div>
 
     <script>
-        // 位置情報を取得し、掲示板にアクセスするためのURLを生成
-        navigator.geolocation.getCurrentPosition(position => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            const qrCode = 'your-qr-code'; // QRコードをここに設定
-            const url = `http://localhost:3000/board/${qrCode}?location=${latitude},${longitude}`;
-            window.location.href = url;
-        }, error => {
-            console.error(error);
+        const form = document.getElementById('post-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const message = document.getElementById('message').value;
+
+            try {
+                const response = await fetch('/board', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, message })
+                });
+                const result = await response.text();
+                console.log(result);
+                // 投稿後、掲示板を更新
+                fetch('/board')
+                    .then(response => response.json())
+                    .then(data => {
+                        const boardDiv = document.getElementById('board');
+                        boardDiv.innerHTML = '';
+                        data.forEach(post => {
+                            const postHtml = `
+                                <h2>${post.title}</h2>
+                                <p>${post.message}</p>
+                            `;
+                            boardDiv.insertAdjacentHTML('beforeend', postHtml);
+                        });
+                    });
+            } catch (err) {
+                console.error(err);
+            }
         });
+
+        // 初期表示
+        fetch('/board')
+            .then(response => response.json())
+            .then(data => {
+                const boardDiv = document.getElementById('board');
+                data.forEach(post => {
+                    const postHtml = `
+                        <h2>${post.title}</h2>
+                        <p>${post.message}</p>
+                    `;
+                    boardDiv.insertAdjacentHTML('beforeend', postHtml);
+                });
+            });
     </script>
 </body>
 </html>
